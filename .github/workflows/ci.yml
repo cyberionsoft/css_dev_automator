@@ -1,0 +1,118 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: ["3.13"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install UV
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+
+    - name: Set up Python ${{ matrix.python-version }}
+      run: uv python install ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        uv sync --all-extras
+
+    - name: Run linting
+      run: |
+        uv run ruff check .
+
+    - name: Run formatting check
+      run: |
+        uv run ruff format --check .
+
+    - name: Check project structure
+      run: |
+        uv run python -c "
+        import sys
+        sys.path.append('.')
+        from src.gui_manager import GUIManager
+        from src.token_validator import TokenValidator
+        from src.excel_validator import ExcelValidator
+        print('✅ All imports successful')
+        "
+
+  build:
+    needs: test
+    runs-on: windows-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install UV
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+
+    - name: Set up Python
+      run: uv python install 3.13
+
+    - name: Install dependencies
+      run: |
+        uv sync --all-extras
+
+    - name: Build executable
+      run: |
+        uv run pyinstaller dev_automator.spec
+
+    - name: Upload executable
+      uses: actions/upload-artifact@v4
+      with:
+        name: css-dev-automator-windows
+        path: dist/dev_automator.exe
+
+  release:
+    needs: build
+    runs-on: windows-latest
+    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[release]')
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download executable
+      uses: actions/download-artifact@v4
+      with:
+        name: css-dev-automator-windows
+        path: dist/
+
+    - name: Get version
+      id: version
+      run: |
+        $version = (uv run python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+        echo "version=$version" >> $env:GITHUB_OUTPUT
+
+    - name: Create Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.version.outputs.version }}
+        release_name: CSS Dev Automator v${{ steps.version.outputs.version }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: dist/dev_automator.exe
+        asset_name: css-dev-automator-v${{ steps.version.outputs.version }}-windows.exe
+        asset_content_type: application/octet-stream
