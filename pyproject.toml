@@ -1,6 +1,6 @@
 [project]
 name = "css-dev-automator"
-version = "0.1.1"
+version = "0.1.2"
 description = "CSS Dev Automator - GUI-based tool for automating C# code generation and AI prompt processing for .NET ERP applications"
 requires-python = ">=3.13"
 authors = [
