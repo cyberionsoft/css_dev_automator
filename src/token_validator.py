@@ -56,6 +56,11 @@ class TokenValidator:
                 logging.warning("Token has already been used")
                 return False
 
+            # Mark token as used for one-time use
+            token_data["used"] = True
+            token_data["used_at"] = datetime.now(UTC).isoformat()
+            self._save_token_data(token_data)
+
             logging.info("Token validation successful")
             return True
 
