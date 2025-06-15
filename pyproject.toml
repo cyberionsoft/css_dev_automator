@@ -22,6 +22,7 @@ dependencies = [
     "pyodbc>=5.2.0", # SQL Server database connectivity
     "PySide6>=6.8.0",
     "fastexcel>=0.11.0", # Fast Excel reading for polars
+    "python-dotenv>=1.0.0", # Environment variable loading
 ]
 
 [project.optional-dependencies]

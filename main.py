@@ -11,6 +11,14 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # dotenv not available, continue without it
+    pass
+
 # Add the current directory to the path to import our modules
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
