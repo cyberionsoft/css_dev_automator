@@ -6,8 +6,34 @@ Used by legacy components (main_processor.py) for backward compatibility
 
 import json
 import os
+import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
+
+
+def get_resource_path(relative_path: str) -> Path:
+    """
+    Get the absolute path to a resource file.
+
+    This function handles both development and PyInstaller executable environments.
+    In development, it returns the path relative to the project root.
+    In PyInstaller onefile mode, it returns the path to the extracted temporary files.
+
+    Args:
+        relative_path: Path relative to the project root (e.g., "config.json")
+
+    Returns:
+        Absolute path to the resource file
+    """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = Path(sys._MEIPASS)
+    except AttributeError:
+        # Development mode - use project root
+        base_path = Path(__file__).parent.parent
+
+    return base_path / relative_path
 
 
 @dataclass
@@ -64,7 +90,11 @@ class ConfigManager:
     """
 
     def __init__(self, config_path: str = "config.json"):
-        self.config_path = config_path
+        # Use resource path for PyInstaller compatibility
+        if config_path == "config.json":
+            self.config_path = str(get_resource_path("config.json"))
+        else:
+            self.config_path = config_path
         self._config_data: dict[str, Any] | None = None
         self.load_config()
 

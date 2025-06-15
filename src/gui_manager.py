@@ -4,6 +4,7 @@ Provides the main GUI interface with 4 core features using PySide6
 """
 
 import shutil
+import sys
 from pathlib import Path
 
 from PySide6.QtCore import QObject, QRunnable, QThreadPool, Qt, Signal, Slot
@@ -30,6 +31,30 @@ except ImportError:
     from excel_validator import ExcelValidator
     from project_generator import ProjectGenerator
     from solution_manager import SolutionManager
+
+
+def get_resource_path(relative_path: str) -> Path:
+    """
+    Get the absolute path to a resource file.
+
+    This function handles both development and PyInstaller executable environments.
+    In development, it returns the path relative to the project root.
+    In PyInstaller onefile mode, it returns the path to the extracted temporary files.
+
+    Args:
+        relative_path: Path relative to the project root (e.g., "Templates/Excel/DataTemplate.xlsx")
+
+    Returns:
+        Absolute path to the resource file
+    """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = Path(sys._MEIPASS)
+    except AttributeError:
+        # Development mode - use project root
+        base_path = Path(__file__).parent.parent
+
+    return base_path / relative_path
 
 
 class WorkerSignals(QObject):
@@ -292,12 +317,12 @@ class GUIManager(QMainWindow):
     def _download_excel_template(self):
         """Download Excel template to Downloads folder."""
         try:
-            # Source template path
-            template_path = Path("Templates/Excel/DataTemplate.xlsx")
+            # Source template path - use resource path for PyInstaller compatibility
+            template_path = get_resource_path("Templates/Excel/DataTemplate.xlsx")
 
             if not template_path.exists():
                 QMessageBox.critical(
-                    self, "Error", "Excel template not found in Templates/Excel/DataTemplate.xlsx"
+                    self, "Error", f"Excel template not found at {template_path}"
                 )
                 return
 

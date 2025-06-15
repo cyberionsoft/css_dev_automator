@@ -3,8 +3,33 @@ Prompt Processor for CSS Dev Automator
 Processes generic prompt templates and updates them with specific entity and module names
 """
 
+import sys
 from pathlib import Path
 from typing import Any
+
+
+def get_resource_path(relative_path: str) -> Path:
+    """
+    Get the absolute path to a resource file.
+
+    This function handles both development and PyInstaller executable environments.
+    In development, it returns the path relative to the project root.
+    In PyInstaller onefile mode, it returns the path to the extracted temporary files.
+
+    Args:
+        relative_path: Path relative to the project root (e.g., "Templates/Prompts")
+
+    Returns:
+        Absolute path to the resource file
+    """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = Path(sys._MEIPASS)
+    except AttributeError:
+        # Development mode - use project root
+        base_path = Path(__file__).parent.parent
+
+    return base_path / relative_path
 
 
 class PromptProcessor:
@@ -15,9 +40,8 @@ class PromptProcessor:
 
     def __init__(self):
         """Initialize the prompt processor."""
-        # Use absolute path from application root
-        app_root = Path(__file__).parent.parent  # Go up from src/ to project root
-        self.template_dir = app_root / "Templates" / "Prompts"
+        # Use resource path for PyInstaller compatibility
+        self.template_dir = get_resource_path("Templates/Prompts")
         # Define multiple placeholder patterns that might be used in templates
         self.placeholder_patterns = {
             # Square brackets
