@@ -10,7 +10,10 @@ from typing import Any
 
 import pyodbc
 
-from .database_manager import DatabaseManager
+try:
+    from .database_manager import DatabaseManager
+except ImportError:
+    from database_manager import DatabaseManager
 
 
 class SPExecutionError(Exception):

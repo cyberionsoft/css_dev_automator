@@ -7,7 +7,10 @@ import json
 import re
 from typing import Any
 
-from .config_manager import JsonExtractionConfig
+try:
+    from .config_manager import JsonExtractionConfig
+except ImportError:
+    from config_manager import JsonExtractionConfig
 
 
 class TimeoutError(Exception):

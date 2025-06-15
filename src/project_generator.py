@@ -6,9 +6,14 @@ Orchestrates the generation of all files including prompts and SP execution file
 from pathlib import Path
 from typing import Any
 
-from .main_processor import MainProcessor
-from .prompt_processor import PromptProcessor
-from .solution_manager import SolutionManager
+try:
+    from .main_processor import MainProcessor
+    from .prompt_processor import PromptProcessor
+    from .solution_manager import SolutionManager
+except ImportError:
+    from main_processor import MainProcessor
+    from prompt_processor import PromptProcessor
+    from solution_manager import SolutionManager
 
 
 class ProjectGenerator:
@@ -73,20 +78,56 @@ class ProjectGenerator:
                         f"Prompt {failed_file['file']}: {failed_file['error']}"
                     )
 
-            # Step 3: Generate SP execution files
-            sp_result = self._generate_sp_files(excel_data, project_folders["SPExecution"])
+            # Step 3: Generate SP execution files (with timeout and error handling)
+            try:
+                import signal
+                import threading
 
-            if sp_result["success"]:
-                summary["completed"].append("Generated SP execution files")
-                summary["completed"].append(
-                    f"  - Processed {sp_result['total_processed']} stored procedures"
-                )
-                summary["completed"].append(f"  - Success: {sp_result['successful']}")
-                summary["completed"].append(f"  - Failed: {sp_result['failed']}")
-            else:
+                # Create a result container for the thread
+                sp_result_container = {"result": None, "error": None}
+
+                def sp_generation_thread():
+                    try:
+                        sp_result_container["result"] = self._generate_sp_files(excel_data, project_folders["SPExecution"])
+                    except Exception as e:
+                        sp_result_container["error"] = str(e)
+
+                # Start SP generation in a separate thread with timeout
+                thread = threading.Thread(target=sp_generation_thread)
+                thread.daemon = True
+                thread.start()
+                thread.join(timeout=60)  # 60 second timeout
+
+                if thread.is_alive():
+                    # Thread is still running, consider it timed out
+                    summary["failed"].append("Generate SP execution files")
+                    summary["errors"].append("SP generation: Operation timed out after 60 seconds")
+                elif sp_result_container["error"]:
+                    # Thread completed with error
+                    summary["failed"].append("Generate SP execution files")
+                    summary["errors"].append(f"SP generation: {sp_result_container['error']}")
+                elif sp_result_container["result"]:
+                    # Thread completed successfully
+                    sp_result = sp_result_container["result"]
+                    if sp_result["success"]:
+                        summary["completed"].append("Generated SP execution files")
+                        summary["completed"].append(
+                            f"  - Processed {sp_result['total_processed']} stored procedures"
+                        )
+                        summary["completed"].append(f"  - Success: {sp_result['successful']}")
+                        summary["completed"].append(f"  - Failed: {sp_result['failed']}")
+                    else:
+                        summary["failed"].append("Generate SP execution files")
+                        if "error" in sp_result:
+                            summary["errors"].append(f"SP generation: {sp_result['error']}")
+                else:
+                    # No result and no error - something went wrong
+                    summary["failed"].append("Generate SP execution files")
+                    summary["errors"].append("SP generation: Unknown error occurred")
+
+            except Exception as e:
                 summary["failed"].append("Generate SP execution files")
-                if "error" in sp_result:
-                    summary["errors"].append(f"SP generation: {sp_result['error']}")
+                summary["errors"].append(f"SP generation setup error: {e}")
 
             # Step 4: Log database connection status
             config_path = Path("config.json")

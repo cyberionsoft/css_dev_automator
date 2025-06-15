@@ -10,7 +10,10 @@ from contextlib import contextmanager
 
 import pyodbc
 
-from .config_manager import DatabaseConfig
+try:
+    from .config_manager import DatabaseConfig
+except ImportError:
+    from config_manager import DatabaseConfig
 
 
 class ConnectionStringParser:

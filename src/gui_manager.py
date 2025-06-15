@@ -22,9 +22,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .excel_validator import ExcelValidator
-from .project_generator import ProjectGenerator
-from .solution_manager import SolutionManager
+try:
+    from .excel_validator import ExcelValidator
+    from .project_generator import ProjectGenerator
+    from .solution_manager import SolutionManager
+except ImportError:
+    from excel_validator import ExcelValidator
+    from project_generator import ProjectGenerator
+    from solution_manager import SolutionManager
 
 
 class WorkerSignals(QObject):
@@ -170,6 +175,11 @@ class GUIManager(QMainWindow):
         self.feature_name = None
         self.database_connection_string = None
 
+        # Operation flags to prevent double-clicks
+        self.excel_processing = False
+        self.solution_processing = False
+        self.generation_processing = False
+
         # Setup UI
         self.setWindowTitle("CSS Dev Automator")
         self.setMinimumSize(800, 600)
@@ -309,6 +319,10 @@ class GUIManager(QMainWindow):
     def _browse_excel_file(self):
         """Browse and validate Excel file."""
         try:
+            # Prevent double-clicks
+            if self.excel_processing:
+                return
+
             file_path, _ = QFileDialog.getOpenFileName(
                 self,
                 "Select Excel File",
@@ -321,7 +335,8 @@ class GUIManager(QMainWindow):
 
             self._log_status(f"Selected Excel file: {file_path}")
 
-            # Disable button and show progress
+            # Set processing flag and disable button
+            self.excel_processing = True
             self.browse_excel_btn.setEnabled(False)
             self.progress_bar.setVisible(True)
             self.progress_bar.setRange(0, 0)  # Indeterminate progress
@@ -343,7 +358,8 @@ class GUIManager(QMainWindow):
     def _on_excel_processing_finished(self, success: bool, result_str: str):
         """Handle Excel processing completion."""
         try:
-            # Re-enable button and hide progress
+            # Reset processing flag and re-enable button
+            self.excel_processing = False
             self.browse_excel_btn.setEnabled(True)
             self.progress_bar.setVisible(False)
 
@@ -376,6 +392,7 @@ class GUIManager(QMainWindow):
     @Slot(str)
     def _on_excel_processing_error(self, error_msg: str):
         """Handle Excel processing error."""
+        self.excel_processing = False
         self.browse_excel_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
         self.excel_status_label.setText("✗ Error processing file")
@@ -386,6 +403,10 @@ class GUIManager(QMainWindow):
     def _browse_solution_file(self):
         """Browse .NET solution file."""
         try:
+            # Prevent double-clicks
+            if self.solution_processing:
+                return
+
             file_path, _ = QFileDialog.getOpenFileName(
                 self,
                 "Select .NET Solution File",
@@ -398,7 +419,8 @@ class GUIManager(QMainWindow):
 
             self._log_status(f"Selected solution file: {file_path}")
 
-            # Disable button and show progress
+            # Set processing flag and disable button
+            self.solution_processing = True
             self.browse_solution_btn.setEnabled(False)
             self.progress_bar.setVisible(True)
             self.progress_bar.setRange(0, 0)  # Indeterminate progress
@@ -420,7 +442,8 @@ class GUIManager(QMainWindow):
     def _on_solution_processing_finished(self, success: bool, result_str: str):
         """Handle solution processing completion."""
         try:
-            # Re-enable button and hide progress
+            # Reset processing flag and re-enable button
+            self.solution_processing = False
             self.browse_solution_btn.setEnabled(True)
             self.progress_bar.setVisible(False)
 
@@ -467,6 +490,7 @@ class GUIManager(QMainWindow):
     @Slot(str)
     def _on_solution_processing_error(self, error_msg: str):
         """Handle solution processing error."""
+        self.solution_processing = False
         self.browse_solution_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
         self.solution_status_label.setText("✗ Error processing file")
@@ -477,13 +501,18 @@ class GUIManager(QMainWindow):
     def _generate_files(self):
         """Generate all files and prompts."""
         try:
+            # Prevent double-clicks
+            if self.generation_processing:
+                return
+
             # Check prerequisites
             if not self._check_prerequisites():
                 return
 
             self._log_status("Starting file generation...")
 
-            # Disable button and show progress
+            # Set processing flag and disable button
+            self.generation_processing = True
             self.generate_btn.setEnabled(False)
             self.progress_bar.setVisible(True)
             self.progress_bar.setRange(0, 0)  # Indeterminate progress
@@ -511,7 +540,8 @@ class GUIManager(QMainWindow):
     def _on_generation_finished(self, success: bool, result_str: str):
         """Handle generation completion."""
         try:
-            # Re-enable button and hide progress
+            # Reset processing flag and re-enable button
+            self.generation_processing = False
             self.generate_btn.setEnabled(True)
             self.progress_bar.setVisible(False)
 
@@ -552,6 +582,7 @@ class GUIManager(QMainWindow):
     @Slot(str)
     def _on_generation_error(self, error_msg: str):
         """Handle generation error."""
+        self.generation_processing = False
         self.generate_btn.setEnabled(True)
         self.progress_bar.setVisible(False)
         self._log_status(error_msg)

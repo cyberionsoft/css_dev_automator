@@ -172,3 +172,102 @@ class ExcelManager:
                 "valid": False,
                 "error": str(e)
             }
+
+    @staticmethod
+    def validate_excel_file_static(file_path: str) -> bool:
+        """
+        Static method to validate Excel file format and content.
+
+        Args:
+            file_path: Path to Excel file
+
+        Returns:
+            True if valid, False otherwise
+        """
+        try:
+            excel_manager = ExcelManager(file_path)
+            is_valid, _ = excel_manager.validate_excel_file()
+            return is_valid
+        except Exception:
+            return False
+
+    @staticmethod
+    def extract_sp_data(file_path: str) -> dict:
+        """
+        Static method to extract stored procedure data from Excel file.
+
+        Args:
+            file_path: Path to Excel file
+
+        Returns:
+            Dictionary with success status and data
+        """
+        try:
+            excel_manager = ExcelManager(file_path)
+            sp_list = excel_manager.read_stored_procedures()
+
+            # Convert to dictionary format expected by GUI
+            data = []
+            module_name = ""
+            entity_name = ""
+
+            # Read the Excel file to get module and entity names
+            df = pl.read_excel(Path(file_path))
+
+            # Extract module and entity names from first data row
+            if df.height > 0:
+                first_row = df.row(0, named=True)
+                module_name = str(first_row.get("Module Name", "")).strip()
+                entity_name = str(first_row.get("Entity Name", "")).strip()
+
+                # Clean and convert to PascalCase
+                module_name = ExcelManager._to_pascal_case(module_name)
+                entity_name = ExcelManager._to_pascal_case(entity_name)
+
+            # Convert SP list to dictionary format
+            for sp in sp_list:
+                data.append({
+                    "name": sp.name,
+                    "type": sp.type,
+                    "row_number": sp.row_number
+                })
+
+            return {
+                "success": True,
+                "data": data,
+                "module_name": module_name,
+                "entity_name": entity_name,
+                "total_count": len(data)
+            }
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+                "data": [],
+                "module_name": "",
+                "entity_name": "",
+                "total_count": 0
+            }
+
+    @staticmethod
+    def _to_pascal_case(text: str) -> str:
+        """
+        Convert text to PascalCase.
+
+        Args:
+            text: Input text
+
+        Returns:
+            PascalCase formatted text
+        """
+        if not text:
+            return ""
+
+        # Remove leading/trailing whitespace and split by spaces
+        words = text.strip().split()
+
+        # Capitalize first letter of each word and join
+        pascal_case = "".join(word.capitalize() for word in words if word)
+
+        return pascal_case

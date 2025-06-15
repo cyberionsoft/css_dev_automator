@@ -8,12 +8,20 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Any
 
-from .config_manager import ConfigManager
-from .database_manager import DatabaseManager
-from .excel_manager import ExcelManager, StoredProcedureInfo
-from .file_manager import FileManager
-from .json_processor import JsonProcessor
-from .sp_executor import StoredProcedureExecutor
+try:
+    from .config_manager import ConfigManager
+    from .database_manager import DatabaseManager
+    from .excel_manager import ExcelManager, StoredProcedureInfo
+    from .file_manager import FileManager
+    from .json_processor import JsonProcessor
+    from .sp_executor import StoredProcedureExecutor
+except ImportError:
+    from config_manager import ConfigManager
+    from database_manager import DatabaseManager
+    from excel_manager import ExcelManager, StoredProcedureInfo
+    from file_manager import FileManager
+    from json_processor import JsonProcessor
+    from sp_executor import StoredProcedureExecutor
 
 
 @dataclass

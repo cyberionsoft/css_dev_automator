@@ -29,19 +29,19 @@ def start_dev_manager_and_exit():
     """Start dev_manager and exit this application"""
     try:
         # Path to dev_manager executable
-        dev_manager_path = Path("C:/Program Files/dev_manager/dev_manager.exe")
+        dev_manager_path = Path("C:/Program Files/DevManager/DevManager.exe")
 
         if dev_manager_path.exists():
-            print("Starting dev_manager...")
+            print("Starting DevManager...")
             subprocess.Popen([str(dev_manager_path)], shell=True)
-            print("dev_manager started. Exiting dev_automator...")
+            print("DevManager started. Exiting DevAutomator...")
         else:
-            print("ERROR: dev_manager not found at expected location.")
-            print("Please ensure dev_manager is properly installed.")
+            print("ERROR: DevManager not found at expected location.")
+            print("Please ensure DevManager is properly installed.")
             return 1
 
     except Exception as e:
-        print(f"ERROR: Failed to start dev_manager: {e}")
+        print(f"ERROR: Failed to start DevManager: {e}")
         return 1
 
     return 0
